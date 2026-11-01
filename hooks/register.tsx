@@ -9,8 +9,20 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const REFRESH_MS = 5 * 60 * 1000
 // Sessions open side by side share one count through $.store for this long.
 const CACHE_MS = 4 * 60 * 1000
-// The engine's PATH may lack Homebrew's, so a failed start tries the next one.
-const PYTHONS = ['python3', '/opt/homebrew/bin/python3', '/usr/local/bin/python3', '/usr/bin/python3']
+// Each way Python 3 may start, tried in turn; the first that runs is kept. On
+// Windows `python3` is often the Microsoft Store's stand-in, which runs only to
+// say Python is missing: that counts as not found. The engine's PATH may also
+// lack Homebrew's, hence the full paths.
+const PYTHONS: readonly (readonly string[])[] = [
+  ['python3'],
+  ['py', '-3'],
+  ['python'],
+  ['/opt/homebrew/bin/python3'],
+  ['/usr/local/bin/python3'],
+  ['/usr/bin/python3'],
+]
+const NO_PYTHON =
+  'Python 3 was not found. Install it from python.org (on Windows: winget install Python.Python.3.13), then press Refresh.'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 // Change a tag when that value's fields change: it declines what an earlier
@@ -67,22 +79,50 @@ function paceVerdict(
 }
 
 let inFlight: Promise<void> | null = null
+let python: readonly string[] | null = null
+let isWatching = false
+let hasOpened = false
+
+/** Windows' "Python was not found" stand-in exits 9009 and says so. */
+function isMissing(run: { exitCode: number; stderr: string }): boolean {
+  return run.exitCode === 9009 || /Python was not found|Microsoft Store/i.test(run.stderr)
+}
 
 async function runPython(
   $: EngineInterface,
   args: string[],
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  let lastError: unknown
-  for (const python of PYTHONS) {
+  const candidates = python ? [python, ...PYTHONS.filter(c => c !== python)] : PYTHONS
+  for (const candidate of candidates) {
     try {
       // -I and the plugin's own folder: nothing in the session's project
       // (a json.py, PYTHONPATH) is imported in place of the standard library.
-      return await $.process.run([python, '-I', ...args], { cwd: $.plugin.root, timeoutMs: 120_000 })
-    } catch (err) {
-      lastError = err
+      const run = await $.process.run([...candidate, '-I', ...args], {
+        cwd: $.plugin.root,
+        timeoutMs: 120_000,
+      })
+      if (isMissing(run)) continue
+      python = candidate
+
+      return run
+    } catch {
+      // Not on this machine: try the next.
     }
   }
-  throw lastError
+  python = null
+  throw new Error(NO_PYTHON)
+}
+
+/** Someone can see the session: open the pane once, unless asked not to, and keep counting. */
+function watch($: EngineInterface, panel: unknown): void {
+  if (panel !== 'command' && !hasOpened) {
+    hasOpened = true
+    void $.ui.open({ id: PANE, title: TITLE })
+  }
+  if (isWatching) return
+  isWatching = true
+  void refresh($)
+  $.clock.every(REFRESH_MS, () => void refresh($))
 }
 
 function toLimits(windows: readonly Limit[]): Limit[] {
@@ -209,12 +249,16 @@ export const register: Register = (on, options) => {
       name: 'usage-pane',
       description: 'Show the token usage pane: plan limits, projects, sessions, agents',
     })
-    // A `-p` run or an SDK host has nobody to look at the pane.
-    if (e.isInteractive) {
-      if (options.panel !== 'command') void $.ui.open({ id: PANE, title: TITLE })
-      void refresh($)
-      $.clock.every(REFRESH_MS, () => void refresh($))
-    }
+    // The terminal is there from the start. The desktop app, a phone or an IDE
+    // attaches a moment later, or had already before a reload. A `-p` run that
+    // nobody attaches to never counts.
+    if (e.isInteractive || (await $.session.surfaces()).length > 0) watch($, options.panel)
+
+    return next(e)
+  })
+
+  on('session.attach', async ($, e, next) => {
+    watch($, options.panel)
 
     return next(e)
   })

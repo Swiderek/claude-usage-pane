@@ -152,11 +152,86 @@ for (const { name, isInteractive, panel, opens } of [
     on('store.get', () => ({ value: undefined }))
     on('store.set', () => ({ value: undefined }))
     on('process.run', () => ((ran += 1), { value: RAN }))
+    on('session.surfaces', () => ({ value: isInteractive ? ['terminal'] : [] }))
     on('session.start', (_, e) => ({ cwd: e.cwd }))
 
-    await $.session.start({ cwd: '/', surface: isInteractive ? 'desktop' : null, isInteractive })
+    await $.session.start({ cwd: '/', surface: isInteractive ? 'terminal' : null, isInteractive })
 
     expect(opened).toBe(opens ? 1 : 0)
     if (!isInteractive) expect(ran).toBe(0)
   })
 }
+
+test('the desktop app attaching opens the pane and starts counting, once', async ($, on) => {
+  let opened = 0
+  let timers = 0
+  on('command.register', () => ({ value: { command: 'usage-pane' } }))
+  on('ui.open', () => ((opened += 1), { value: { isPlaced: true } }))
+  on('clock.every', () => ((timers += 1), { value: undefined }))
+  on('clock.now', () => ({ value: NOW }))
+  on('session.usage', () => ({ value: USAGE }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('process.run', () => ({ value: RAN }))
+  // A session the desktop app hosts starts with nobody attached yet.
+  on('session.surfaces', () => ({ value: [] }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('session.attach', (_, e) => ({ clientId: e.clientId }))
+
+  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
+  expect(opened).toBe(0)
+
+  await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+  await $.session.attach({ surface: 'mobile', clientId: 'mobile:phone' })
+
+  expect(opened).toBe(1)
+  expect(timers).toBe(1)
+})
+
+function pythonRun(argv: readonly string[], missing: readonly string[], absent: readonly string[]) {
+  if (absent.includes(argv[0] ?? '')) throw new Error('spawn ENOENT')
+  if (missing.includes(argv[0] ?? '')) {
+    return {
+      value: {
+        ...RAN,
+        exitCode: 9009,
+        stdout: '',
+        stderr: 'Python was not found; run without arguments to install from the Microsoft Store',
+      },
+    }
+  }
+
+  return { value: RAN }
+}
+
+test('the Microsoft Store stand-in for python3 is skipped for the py launcher', async ($, on) => {
+  const tried: string[] = []
+  on('clock.now', () => ({ value: NOW }))
+  on('session.usage', () => ({ value: USAGE }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('process.run', (_, e) => (tried.push(e.argv.slice(0, 2).join(' ')), pythonRun(e.argv, ['python3'], [])))
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'refresh' })
+
+  expect(tried).toEqual(['python3 -I', 'py -3'])
+  expect(await ui.find({ type: 'Text', text: /Refactor the billing module/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Error/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('no Python at all says how to install it', async ($, on) => {
+  on('clock.now', () => ({ value: NOW }))
+  on('session.usage', () => ({ value: USAGE }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('process.run', (_, e) => pythonRun(e.argv, ['python3', 'python'], ['py', '/opt/homebrew/bin/python3', '/usr/local/bin/python3', '/usr/bin/python3']))
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'refresh' })
+
+  expect((await ui.find({ type: 'Text', text: /^Error/ }))?.text).toContain('Python 3 was not found')
+  expect((await ui.find({ type: 'Text', text: /^Error/ }))?.text).toContain('winget install Python.Python.3.13')
+  await ui.unmount()
+})

@@ -13,7 +13,10 @@ A pane beside the Claude Code chat that answers "where did my tokens go this wee
 
 ## Install
 
-Requires Claude Code with function-hook plugins (mods), 2.1.309 or newer, and Python 3 on your PATH.
+Requires Claude Code with function-hook plugins (mods), 2.1.309 or newer, and Python 3. Nothing else needs installing: the script uses only Python's standard library.
+
+- **macOS and Linux:** the system or Homebrew Python is enough.
+- **Windows:** install Python for your user, no administrator rights needed: `winget install Python.Python.3.13`, or the installer from python.org. The plugin tries `python3`, then the `py` launcher, then `python`, and skips the Microsoft Store shortcut that only says Python is missing.
 
 At the prompt of a terminal session:
 
@@ -29,7 +32,7 @@ claude plugin install usage-pane --marketplace Swiderek/claude-usage-pane
 
 In the desktop app, where `/plugin` does not run: click + next to the prompt box, then Plugins, Add marketplace with `Swiderek/claude-usage-pane`, then Add plugin.
 
-The pane opens when an interactive session starts. `/usage-pane` opens it again after you close it.
+The pane opens in each new session: in a terminal when the session starts, in the desktop app, VS Code or on a phone when that app connects. `/usage-pane` opens it again after you close it. The desktop app's prompt box may say "/usage-pane isn't a command here"; send it anyway and the pane opens.
 
 ## Settings
 
@@ -41,7 +44,7 @@ Change it in `/config`, under the plugin's rows.
 
 ## How the numbers are counted
 
-The plugin reads the transcripts Claude Code keeps on your machine (`~/.claude/projects/**/*.jsonl`) with `scripts/usage.py`. It counts every model response since the weekly limit last reset, once, and weights each kind of token by its cost against a plain input token:
+The plugin reads the transcripts Claude Code keeps on your machine (`~/.claude/projects/**/*.jsonl`, or under `CLAUDE_CONFIG_DIR` when you set it) with `scripts/usage.py`. It counts every model response since the weekly limit last reset, once, and weights each kind of token by its cost against a plain input token:
 
 | Token kind | Weight |
 | --- | --- |
@@ -59,19 +62,21 @@ The count refreshes every 5 minutes. Sessions open at the same time share one co
 
 - Everything stays on your machine. The plugin makes no network requests.
 - It reads only `~/.claude/projects`, and shows project folder names and session titles in the pane.
-- It runs one local command, `python3 -I scripts/usage.py`, without a shell.
+- It runs one local command, `python3 -I scripts/usage.py` (or `py -3`, `python`), without a shell, from the plugin's own folder.
 
 ## Limitations
 
 - The transcript format is internal to Claude Code and not a stable interface. An update can change it and break the count.
 - Conversations on claude.ai (web, desktop or mobile chat) are not stored locally, so they are not counted here, although they count toward the same plan limits.
-- `-p` runs and SDK hosts do not open the pane or count in the background.
+- A `-p` run that no app connects to does not open the pane or count in the background.
+- Transcripts larger than 4 MB are common, and plugins cannot read files that large themselves, so the count needs Python.
 
 ## Development
 
 ```
 claude plugin validate .
 claude plugin test .
+python3 -I tests/test_usage.py
 ```
 
 ## License

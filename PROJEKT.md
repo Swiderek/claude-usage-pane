@@ -13,4 +13,5 @@ Publiczny mod Claude Code: panel zużycia tokenów (limity planu, tempo, projekt
 ## W toku
 
 ## Zrobione
+- [x] 2026-11-01 — [P1] 0.1.1: Windows (py/python, skrót Store, ścieżki, UTF-8), panel w desktopie po podłączeniu aplikacji, CLAUDE_CONFIG_DIR (Claude)
 - [x] 2026-11-01 — Panel: limity, tempo, podział Ty vs agenci, projekty i sesje; publiczne repo (Claude)

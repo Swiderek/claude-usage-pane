@@ -1,6 +1,6 @@
 {
   "name": "usage-pane",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A pane beside the chat with your Claude Code plan limits, your pace against the weekly limit, and which projects, sessions and agents used the most tokens this week.",
   "author": { "name": "Swiderek", "url": "https://github.com/Swiderek" },
   "homepage": "https://github.com/Swiderek/claude-usage-pane",

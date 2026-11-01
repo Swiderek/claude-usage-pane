@@ -15,15 +15,17 @@ import re
 import sys
 import time
 
-ROOT = os.path.expanduser("~/.claude/projects")
-HOME = os.path.expanduser("~")
+CONFIG = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+ROOT = os.path.join(CONFIG, "projects")
+# Paths are compared with forward slashes, so Windows' backslashes match too.
+HOME = os.path.expanduser("~").replace("\\", "/")
 TOP = 8
 
 
 def project_of(cwd):
     if not cwd:
         return "?"
-    cwd = re.sub(r"/\.(claude/)?worktrees/.*$", "", cwd)
+    cwd = re.sub(r"/\.(claude/)?worktrees/.*$", "", cwd.replace("\\", "/"))
     if "scratch-workspaces" in cwd:
         return "(no folder)"
     return cwd.replace(HOME, "~")
@@ -65,7 +67,7 @@ def main():
     sess = {}
     models = collections.Counter()
 
-    for path in glob.glob(f"{ROOT}/**/*.jsonl", recursive=True):
+    for path in glob.glob(os.path.join(ROOT, "**", "*.jsonl"), recursive=True):
         try:
             if os.path.getmtime(path) < cutoff:
                 continue
@@ -73,10 +75,11 @@ def main():
             continue
         # Subagents (Agent tool, workflows) write beside their session:
         # <session id>/subagents/**/agent-*.jsonl
-        is_sub = "/subagents/" in path
-        parent = path.split("/subagents/")[0].rsplit("/", 1)[-1] if is_sub else None
+        norm = path.replace("\\", "/")
+        is_sub = "/subagents/" in norm
+        parent = norm.split("/subagents/")[0].rsplit("/", 1)[-1] if is_sub else None
         title = prompt = None
-        with open(path, errors="ignore") as fh:
+        with open(path, encoding="utf-8", errors="ignore") as fh:
             for line in fh:
                 if not is_sub and '"ai-title"' in line:
                     try:
@@ -108,9 +111,10 @@ def main():
                 s = sess.setdefault(sid, {"eff": 0.0, "sub": 0.0, "agents": set(), "proj": None,
                                          "title": None, "prompt": None})
                 s["eff"] += e
-                if is_sub:
+                # An agent's rows say so themselves, wherever the file lies.
+                if is_sub or d.get("isSidechain") is True:
                     s["sub"] += e
-                    s["agents"].add(path)
+                    s["agents"].add(d.get("agentId") or norm)
                 elif not s["proj"]:
                     s["proj"] = project_of(d.get("cwd"))
                 if not s["proj"] and d.get("cwd"):
@@ -120,7 +124,7 @@ def main():
             sid = os.path.basename(path)[:-6]
             if sid in sess:
                 try:
-                    with open(path[:-6] + "/custom-title.json") as fh:
+                    with open(os.path.join(path[:-6], "custom-title.json"), encoding="utf-8") as fh:
                         title = json.load(fh).get("customTitle") or title
                 except Exception:
                     pass
@@ -152,7 +156,8 @@ def main():
         ],
         "models": [{"model": k.replace("claude-", ""), "eff": round(v)} for k, v in models.most_common(4)],
     }
-    json.dump(report, sys.stdout, ensure_ascii=False)
+    # ASCII escapes: a Windows console's code page cannot print every title.
+    json.dump(report, sys.stdout, ensure_ascii=True)
 
 
 if __name__ == "__main__":
