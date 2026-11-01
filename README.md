@@ -2,6 +2,8 @@
 
 A pane beside the Claude Code chat that answers "where did my tokens go this week?" It shows your plan limits live, whether you are using the weekly limit faster than the week is passing, and which projects, sessions and agents used the most.
 
+**Everything is computed locally, on your computer. The plugin sends no data anywhere:** no network requests, no telemetry, and nothing it counts is added to your conversation with Claude. See [Privacy](#privacy).
+
 ![The usage pane with made-up projects; numbered notes explain each part](docs/pane-annotated.svg)
 
 ## What it shows
@@ -104,9 +106,14 @@ The count refreshes every 5 minutes. Sessions open at the same time share one co
 
 ## Privacy
 
-- Everything stays on your machine. The plugin makes no network requests.
-- It reads only `~/.claude/projects`, and shows project folder names and session titles in the pane.
-- It runs one local command, `python3 -I scripts/usage.py` (or `py -3`, `python`), without a shell, from the plugin's own folder.
+- **All computation is local.** `scripts/usage.py` reads your transcripts on your computer and the pane draws the result there.
+- **No data leaves your computer.** The plugin makes no network requests and has no telemetry. The script imports only Python's standard library and opens no network connection.
+- **Nothing reaches the model.** What the pane counts and shows is not added to your conversation, so it is not sent to Claude with your messages.
+- **What it reads:** only `~/.claude/projects` (or `CLAUDE_CONFIG_DIR/projects`). It shows project folder names and session titles in the pane.
+- **What it stores:** the last count, in Claude Code's local plugin storage, so sessions open at the same time can share it.
+- **What it runs:** one local command, `python3 -I scripts/usage.py` (or `py -3`, `python`), without a shell, from the plugin's own folder.
+- **Check it yourself:** `claude plugin validate .` lists every call the plugin makes to Claude Code. None of them is a network call (`$.http`).
+- If you open a session on another device through Claude Code's remote access, such as the mobile app, Claude Code shows the pane there too, the same way it shows the conversation. The plugin itself still sends nothing.
 
 ## Limitations
 
