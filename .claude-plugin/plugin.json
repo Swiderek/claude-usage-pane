@@ -1,0 +1,20 @@
+{
+  "name": "usage-pane",
+  "version": "0.1.0",
+  "description": "A pane beside the chat with your Claude Code plan limits, your pace against the weekly limit, and which projects, sessions and agents used the most tokens this week.",
+  "author": { "name": "Swiderek", "url": "https://github.com/Swiderek" },
+  "homepage": "https://github.com/Swiderek/claude-usage-pane",
+  "repository": "https://github.com/Swiderek/claude-usage-pane",
+  "license": "MIT",
+  "keywords": ["usage", "tokens", "rate-limits", "pane", "agents"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "panel": {
+      "type": "string",
+      "title": "Usage pane",
+      "description": "auto opens the pane when an interactive session starts; command opens it only with /usage-pane",
+      "default": "auto",
+      "options": ["auto", "command"]
+    }
+  }
+}

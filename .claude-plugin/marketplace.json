@@ -1,0 +1,13 @@
+{
+  "name": "usage-pane",
+  "owner": {
+    "name": "Swiderek"
+  },
+  "description": "Usage pane for Claude Code: plan limits, weekly pace, and token usage per project, session and agent.",
+  "plugins": [
+    {
+      "name": "usage-pane",
+      "source": "./"
+    }
+  ]
+}
