@@ -32,7 +32,45 @@ claude plugin install usage-pane --marketplace Swiderek/claude-usage-pane
 
 In the desktop app, where `/plugin` does not run: click + next to the prompt box, then Plugins, Add marketplace with `Swiderek/claude-usage-pane`, then Add plugin.
 
-The pane opens in each new session: in a terminal when the session starts, in the desktop app, VS Code or on a phone when that app connects. `/usage-pane` opens it again after you close it. The desktop app's prompt box may say "/usage-pane isn't a command here"; send it anyway and the pane opens.
+The plugin loads when a session starts, so open a new session after installing.
+
+## Open the pane
+
+### In the terminal
+
+1. Start a new session with `claude`. The pane opens by itself.
+   - In a terminal at least 110 columns wide, in fullscreen, it sits beside the conversation.
+   - In a narrower one it sits above the prompt.
+2. Closed it? Type `/usage-pane` and press Enter.
+3. To refresh right away, press ctrl+x then Tab to move into the pane, then `r`. Otherwise it refreshes every 5 minutes.
+
+### In the desktop app
+
+1. Open a new session in the Code tab. The pane opens by itself on the right.
+2. Closed it? Type `/usage-pane` in the prompt box and send it. The box may say "/usage-pane isn't a command here": send it anyway, and the reply "Usage pane opened." confirms it.
+3. Click **Refresh** to count again right away. Otherwise it refreshes every 5 minutes.
+
+The plan limits appear after the model's first reply in the session, because Claude Code reads them from that reply.
+
+## Update
+
+1. From a shell (Terminal on macOS and Linux, PowerShell on Windows):
+
+   ```
+   claude plugin update usage-pane
+   ```
+
+   If it says the plugin is already at the latest version while GitHub has a newer one, refresh the marketplace first, then run the update again:
+
+   ```
+   claude plugin marketplace update usage-pane
+   ```
+
+2. Apply it:
+   - **Terminal:** type `/reload-plugins` in the open session, or start a new one.
+   - **Desktop app:** open a new session. Sessions that were already open keep the old version.
+
+The version you run is in `/plugin` (terminal), or from a shell: `claude plugin list`.
 
 ## Settings
 
@@ -40,7 +78,13 @@ The pane opens in each new session: in a terminal when the session starts, in th
 | --- | --- | --- |
 | `panel` | `auto` opens the pane at session start; `command` opens it only with `/usage-pane` | `auto` |
 
-Change it in `/config`, under the plugin's rows.
+Change it in `/config` in a terminal session, under the plugin's rows, or from a shell:
+
+```
+echo '{"panel":"command"}' | claude plugin configure usage-pane@usage-pane --values-stdin
+```
+
+The change applies to sessions started after it.
 
 ## How the numbers are counted
 
