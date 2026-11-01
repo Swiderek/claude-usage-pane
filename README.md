@@ -2,31 +2,7 @@
 
 A pane beside the Claude Code chat that answers "where did my tokens go this week?" It shows your plan limits live, whether you are using the weekly limit faster than the week is passing, and which projects, sessions and agents used the most.
 
-```
-Plan limits
-Week     82% █████████████░░░ resets in 3d 2h
-5 hours  12% ██░░░░░░░░░░░░░░ resets in 2h 10m
-Pace: too fast (56% of week gone, runs out in 20h 38m)
-
-Since Oct 28 · 700M effective tokens · 53 sessions
-
-Who used it
-██████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-█ you 20% · ▓ agents 80%
-482 agents in 12 of 53 sessions
-
-Projects
- 28% ██▓▓▓▓▓▓▓▓▓▓▓▓▓▓ example-app
- 26% █▓▓▓▓▓▓▓▓▓▓▓▓▓░░ docs-site
-...
-
-Sessions
- 28% ██▓▓▓▓▓▓▓▓▓▓▓▓▓▓ Refactor the billing module
-      example-app · 61 agents, 88% of this session
-...
-Models: opus-5-5 75% · sonnet-5-5 25%
-[Refresh] updated 2 min ago
-```
+![The usage pane with made-up projects; numbered notes explain each part](docs/pane-annotated.svg)
 
 ## What it shows
 
