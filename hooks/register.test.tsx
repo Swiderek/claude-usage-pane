@@ -72,6 +72,13 @@ test('Refresh fills the pane from the script, on every surface', async ($, on) =
     expect(split48?.text.length).toBe(28)
     await ui.unmount()
   }
+
+  // The same counted report stays off the phone.
+  const phone = await $.ui.mount({ ...PANE, surface: 'mobile' })
+  expect(await phone.find({ type: 'Text', text: /hidden on the phone/ })).toBeDefined()
+  expect(await phone.find({ type: 'Text', text: /Refactor the billing module/ })).toBeUndefined()
+  expect(await phone.find({ type: 'Text', text: /example-app/ })).toBeUndefined()
+  await phone.unmount()
 })
 
 test('one agent and one session read in the singular', async ($, on) => {

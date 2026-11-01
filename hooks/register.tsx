@@ -289,6 +289,11 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
+    // Project names and session titles stay off the phone, whatever the app
+    // there comes to draw: nothing is read for it.
+    if (e.surface === 'mobile') {
+      return <Text dimColor>Usage is hidden on the phone. Open it in the terminal or the desktop app.</Text>
+    }
     const rep = await read($, report)
     const windows = await read($, limits)
     const st = await read($, status)

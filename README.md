@@ -54,6 +54,10 @@ The plugin loads when a session starts, so open a new session after installing.
 
 The plan limits appear after the model's first reply in the session, because Claude Code reads them from that reply.
 
+### On a phone
+
+The pane shows no usage on a phone, so your project names and session titles stay off a screen others can easily see. If the mobile app draws plugin panes, it shows only "Usage is hidden on the phone."
+
 ## Update
 
 1. From a shell (Terminal on macOS and Linux, PowerShell on Windows):
@@ -113,7 +117,8 @@ The count refreshes every 5 minutes. Sessions open at the same time share one co
 - **What it stores:** the last count, in Claude Code's local plugin storage, so sessions open at the same time can share it.
 - **What it runs:** one local command, `python3 -I scripts/usage.py` (or `py -3`, `python`), without a shell, from the plugin's own folder.
 - **Check it yourself:** `claude plugin validate .` lists every call the plugin makes to Claude Code. None of them is a network call (`$.http`).
-- If you open a session on another device through Claude Code's remote access, such as the mobile app, Claude Code shows the pane there too, the same way it shows the conversation. The plugin itself still sends nothing.
+- **Not on the phone.** The pane draws no usage for the mobile app: it reads nothing for that screen and shows only a short note.
+- If you open a session in another app through Claude Code's remote access (a second computer, VS Code), Claude Code shows the pane there the same way it shows the conversation. The plugin itself still sends nothing.
 
 ## Limitations
 
