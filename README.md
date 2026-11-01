@@ -13,6 +13,16 @@ A pane beside the Claude Code chat that answers "where did my tokens go this wee
 - **Who used it**: your own conversations against the subagents and workflow agents they started. Agents usually dominate: each one starts by reading the full system prompt and tool list.
 - **Projects and sessions**: the eight biggest of each this week, split the same way.
 
+### The line above the prompt
+
+The three numbers that matter most stay in view above the prompt, even with the pane closed:
+
+```
+Week 68% · fast, runs out in 1d 22h · agents 62%   [Usage]
+```
+
+**Usage** opens the pane. The line appears once there is something to show, makes way while Claude asks you a multiple-choice question, and is not drawn on a phone. Turn it off with the `band` setting.
+
 ## Install
 
 Requires Claude Code with function-hook plugins (mods), 2.1.309 or newer, and Python 3. Nothing else needs installing: the script uses only Python's standard library.
@@ -83,11 +93,12 @@ The version you run is in `/plugin` (terminal), or from a shell: `claude plugin 
 | Option | Values | Default |
 | --- | --- | --- |
 | `panel` | `auto` opens the pane at session start; `command` opens it only with `/usage-pane` | `auto` |
+| `band` | `on` shows the line above the prompt; `off` hides it | `on` |
 
-Change it in `/config` in a terminal session, under the plugin's rows, or from a shell:
+Change them in `/config` in a terminal session, under the plugin's rows, or from a shell. For example, to hide the line above the prompt:
 
 ```
-echo '{"panel":"command"}' | claude plugin configure usage-pane@usage-pane --values-stdin
+echo '{"band":"off"}' | claude plugin configure usage-pane@usage-pane --values-stdin
 ```
 
 The change applies to sessions started after it.

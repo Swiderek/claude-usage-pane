@@ -53,14 +53,15 @@ const AGENTS: Color = 'claude'
 /**
  * Whether the weekly limit is being used faster than the week is passing.
  *
- * @returns the Pace row's words and color, or null to leave the row out
+ * @returns the Pace row's words (`label`), the band's shorter ones (`short`)
+ *   and their color, or null to leave the row out
  */
 function paceVerdict(
   percentUsed: number,
   resetsAt: string,
   now: number,
-): { label: string; color: Color } | null {
-  if (percentUsed >= 100) return { label: 'limit reached', color: 'error' }
+): { label: string; short: string; color: Color } | null {
+  if (percentUsed >= 100) return { label: 'limit reached', short: 'limit reached', color: 'error' }
   const left = Date.parse(resetsAt) - now
   const elapsed = Math.min(WEEK_MS, Math.max(0, WEEK_MS - left))
   // Too little of the week has passed for a ratio to mean anything.
@@ -68,14 +69,14 @@ function paceVerdict(
 
   const ratio = percentUsed / 100 / (elapsed / WEEK_MS)
   const gone = `${Math.round((elapsed / WEEK_MS) * 100)}% of week gone`
-  if (ratio <= 1.1) return { label: `on track (${gone})`, color: 'success' }
+  if (ratio <= 1.1) return { label: `on track (${gone})`, short: 'on track', color: 'success' }
 
   // At this rate the rest of the limit lasts this long; past the reset it is no risk.
   const lasts = ((100 - percentUsed) / percentUsed) * elapsed
   const runsOut = lasts < left ? `, runs out in ${span(lasts)}` : ''
-  if (ratio <= 1.4) return { label: `fast (${gone}${runsOut})`, color: 'warning' }
+  if (ratio <= 1.4) return { label: `fast (${gone}${runsOut})`, short: `fast${runsOut}`, color: 'warning' }
 
-  return { label: `too fast (${gone}${runsOut})`, color: 'error' }
+  return { label: `too fast (${gone}${runsOut})`, short: `too fast${runsOut}`, color: 'error' }
 }
 
 let inFlight: Promise<void> | null = null
@@ -285,6 +286,45 @@ export const register: Register = (on, options) => {
     }
 
     return next(e)
+  })
+
+  // One line above the prompt, always in view: the week, the pace, the agents'
+  // share, and a button to the pane. It gives way to a survey, stays off the
+  // phone, and shows nothing until there is something counted.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (options.band === 'off' || e.surface === 'mobile' || e.props.hasSurvey) return next(e)
+    const windows = await read($, limits)
+    const rep = await read($, report)
+    const shown = windows.find(l => l.kind === 'seven_day') ?? windows[0]
+    if (!shown && !rep) return next(e)
+
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const now = await $.clock.now()
+    const pace =
+      shown?.kind === 'seven_day' && shown.resetsAt
+        ? paceVerdict(shown.percentUsed, shown.resetsAt, now)
+        : null
+
+    return (
+      <Box flexDirection="row" gap={1}>
+        <Text wrap="truncate-end">
+          {shown && <Text dimColor>{LIMIT_LABELS[shown.kind] ?? shown.kind} </Text>}
+          {shown && <Text color={limitColor(shown.percentUsed)}>{Math.round(shown.percentUsed)}%</Text>}
+          {pace && <Text dimColor> · </Text>}
+          {pace && <Text color={pace.color}>{pace.short}</Text>}
+          {rep && <Text dimColor>{shown ? ' · ' : ''}agents </Text>}
+          {rep && <Text color={AGENTS}>{share(rep.subTotal, rep.total).trim()}</Text>}
+        </Text>
+        <Button
+          key="open-usage"
+          label="Usage"
+          onPress={() => {
+            void $.ui.open({ id: PANE, title: TITLE, focus: true })
+            void refresh($)
+          }}
+        />
+      </Box>
+    )
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {

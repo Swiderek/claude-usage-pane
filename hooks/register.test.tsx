@@ -1,4 +1,5 @@
 import { expect, test } from 'claude-code/testing'
+import type { TestBody } from 'claude-code/testing'
 
 import type { UsageReport } from '../types'
 
@@ -268,4 +269,92 @@ test('no Python at all says how to install it', async ($, on) => {
   expect((await ui.find({ type: 'Text', text: /^Error/ }))?.text).toContain('Python 3 was not found')
   expect((await ui.find({ type: 'Text', text: /^Error/ }))?.text).toContain('winget install Python.Python.3.13')
   await ui.unmount()
+})
+
+const BAND = {
+  plugin: 'usage-pane',
+  component: 'AbovePrompt',
+  props: {
+    hasSurvey: false,
+    isWorking: false,
+    maxRows: 6,
+    bodyColumns: 100,
+    scroll: { offset: 0, bodyRows: 6 },
+    view: {},
+  },
+} as const
+
+/** The engine's own drawing, beneath the plugin: what a quiet band leaves to it. */
+function engineDraws(on: Parameters<TestBody>[1]) {
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+
+    return <Text>engine</Text>
+  })
+}
+
+function counted(on: Parameters<TestBody>[1]) {
+  on('clock.now', () => ({ value: NOW }))
+  on('session.usage', () => ({ value: USAGE }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('process.run', () => ({ value: RAN }))
+}
+
+async function countNow($: Parameters<TestBody>[0]) {
+  const pane = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await pane.press({ key: 'refresh' })
+  await pane.unmount()
+}
+
+test('the band sums up the week and opens the pane, on every surface', async ($, on) => {
+  const opens: { id: string; focus?: true }[] = []
+  counted(on)
+  on('ui.open', (_, e) => (opens.push({ id: e.id, focus: e.focus }), { value: { isPlaced: true } }))
+  await countNow($)
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const band = await $.ui.mount({ ...BAND, surface })
+
+    expect((await band.find({ type: 'Text', text: /^Week/ }))?.text).toBe(
+      'Week 82% · too fast, runs out in 20h 38m · agents 80%',
+    )
+    await band.press({ key: 'open-usage' })
+    expect(opens.at(-1)).toEqual({ id: 'usage-pane', focus: true })
+    await band.unmount()
+  }
+})
+
+test('the band stays out of the way until there is something to show', async ($, on) => {
+  counted(on)
+  engineDraws(on)
+
+  // Nothing counted yet.
+  const early = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await early.find({ type: 'Text', text: /engine/ })).toBeDefined()
+  await early.unmount()
+
+  await countNow($)
+
+  // A survey needs the room; the phone gets no usage.
+  for (const mount of [
+    { ...BAND, surface: 'desktop', props: { ...BAND.props, hasSurvey: true } },
+    { ...BAND, surface: 'mobile' },
+  ] as const) {
+    const band = await $.ui.mount(mount)
+    expect(await band.find({ type: 'Text', text: /engine/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /Week/ })).toBeUndefined()
+    await band.unmount()
+  }
+})
+
+test('the band can be turned off', { options: { band: 'off' } }, async ($, on) => {
+  counted(on)
+  engineDraws(on)
+  await countNow($)
+
+  const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await band.find({ type: 'Text', text: /engine/ })).toBeDefined()
+  expect(await band.find({ type: 'Text', text: /Week/ })).toBeUndefined()
+  await band.unmount()
 })

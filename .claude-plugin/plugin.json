@@ -1,7 +1,7 @@
 {
   "name": "usage-pane",
-  "version": "0.1.4",
-  "description": "A pane beside the chat with your Claude Code plan limits, your pace against the weekly limit, and which projects, sessions and agents used the most tokens this week.",
+  "version": "0.2.0",
+  "description": "A pane beside the chat and a line above the prompt with your Claude Code plan limits, your pace against the weekly limit, and which projects, sessions and agents used the most tokens this week.",
   "author": { "name": "Swiderek", "url": "https://github.com/Swiderek" },
   "homepage": "https://github.com/Swiderek/claude-usage-pane",
   "repository": "https://github.com/Swiderek/claude-usage-pane",
@@ -15,6 +15,13 @@
       "description": "auto opens the pane when an interactive session starts; command opens it only with /usage-pane",
       "default": "auto",
       "options": ["auto", "command"]
+    },
+    "band": {
+      "type": "string",
+      "title": "Usage line above the prompt",
+      "description": "on shows the week, the pace and the agents' share above the prompt, with a button to the pane; off hides it",
+      "default": "on",
+      "options": ["on", "off"]
     }
   }
 }

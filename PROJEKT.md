@@ -13,6 +13,7 @@ Publiczny mod Claude Code: panel zużycia tokenów (limity planu, tempo, projekt
 ## W toku
 
 ## Zrobione
+- [x] 2026-11-01 — [P2] 0.2.0: pasek nad polem wpisywania (tydzień, tempo, agenci, przycisk Usage), opcja band (Claude)
 - [x] 2026-11-01 — [P2] 0.1.4: panel nie pokazuje danych na telefonie (Claude)
 - [x] 2026-11-01 — [P2] 0.1.3: paski bez czcionki o stałej szerokości (nachodziły na wiersz wyżej na Windows); README: wszystko liczone lokalnie (Claude)
 - [x] 2026-11-01 — [P2] 0.1.2: pasek bez zawijania w desktopie, (home folder), bez <synthetic>, liczba pojedyncza (Claude)
