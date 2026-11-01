@@ -300,7 +300,9 @@ export const register: Register = (on, options) => {
     const top = rep?.projects[0]?.eff ?? 1
     const topSession = rep?.topSessions[0]?.eff ?? 1
     // The week's split, kept well inside the pane: a surface that draws text in
-    // a proportional face fits fewer block glyphs than it has columns.
+    // a proportional face fits fewer block glyphs than it has columns. Bars stay
+    // in that face, not `mono`: a monospaced face can draw block glyphs taller
+    // than the row (Windows), over the line above.
     const whole = rep
       ? stack(rep.total, rep.subTotal, rep.total, Math.max(10, Math.min(32, Math.floor(cols * 0.6))))
       : { mine: '', agents: '', rest: '' }
@@ -315,7 +317,7 @@ export const register: Register = (on, options) => {
               <Text tabular>
                 {(LIMIT_LABELS[w.kind] ?? w.kind).padEnd(7)} {`${Math.round(w.percentUsed)}%`.padStart(4)}
               </Text>
-              <Text mono color={limitColor(w.percentUsed)}>
+              <Text color={limitColor(w.percentUsed)}>
                 {bar(w.percentUsed / 100, barWidth)}
               </Text>
               <Text dimColor wrap="truncate-end">
@@ -341,7 +343,7 @@ export const register: Register = (on, options) => {
 
             <Box flexDirection="column">
               <Text weight="semibold">Who used it</Text>
-              <Text mono wrap="truncate-end">
+              <Text wrap="truncate-end">
                 <Text color={MINE}>{whole.mine}</Text>
                 <Text color={AGENTS}>{whole.agents}</Text>
               </Text>
@@ -362,7 +364,7 @@ export const register: Register = (on, options) => {
                 return (
                   <Box flexDirection="row" gap={1}>
                     <Text tabular>{share(p.eff, rep.total)}</Text>
-                    <Text mono>
+                    <Text>
                       <Text color={MINE}>{s.mine}</Text>
                       <Text color={AGENTS}>{s.agents}</Text>
                       <Text dimColor>{s.rest}</Text>
@@ -382,7 +384,7 @@ export const register: Register = (on, options) => {
                   <Box flexDirection="column">
                     <Box flexDirection="row" gap={1}>
                       <Text tabular>{share(s.eff, rep.total)}</Text>
-                      <Text mono>
+                      <Text>
                         <Text color={MINE}>{b.mine}</Text>
                         <Text color={AGENTS}>{b.agents}</Text>
                         <Text dimColor>{b.rest}</Text>
