@@ -89,5 +89,22 @@ class UsageTest(unittest.TestCase):
         self.assertEqual(report["sessionsWithAgents"], 1)
 
 
+    def test_home_folder_is_named_and_synthetic_rows_are_not_a_model(self):
+        home = os.path.expanduser("~")
+        synthetic = json.loads(assistant("m2", home, output=0))
+        synthetic["message"]["model"] = "<synthetic>"
+        synthetic["message"]["usage"] = {"input_tokens": 0, "output_tokens": 0}
+        write(os.path.join(self.project, f"{SESSION}.jsonl"), [
+            assistant("m1", home),
+            json.dumps(synthetic),
+        ])
+
+        report = self.run_script()
+
+        self.assertEqual(report["projects"][0]["label"], "(home folder)")
+        self.assertEqual(report["topSessions"][0]["project"], "(home folder)")
+        self.assertEqual([m["model"] for m in report["models"]], ["opus-5-5"])
+
+
 if __name__ == "__main__":
     unittest.main()

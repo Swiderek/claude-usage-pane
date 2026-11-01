@@ -195,6 +195,10 @@ function share(part: number, total: number): string {
   return `${total > 0 ? Math.round((part / total) * 100) : 0}%`.padStart(4)
 }
 
+function count(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? '' : 's'}`
+}
+
 function bar(fraction: number, width: number): string {
   const full = Math.max(0, Math.min(width, Math.round(fraction * width)))
   return '█'.repeat(full) + '░'.repeat(width - full)
@@ -295,9 +299,10 @@ export const register: Register = (on, options) => {
     const pace = week?.resetsAt ? paceVerdict(week.percentUsed, week.resetsAt, now) : null
     const top = rep?.projects[0]?.eff ?? 1
     const topSession = rep?.topSessions[0]?.eff ?? 1
-    // The whole week's split runs the pane's width, less the frame's margin.
+    // The week's split, kept well inside the pane: a surface that draws text in
+    // a proportional face fits fewer block glyphs than it has columns.
     const whole = rep
-      ? stack(rep.total, rep.subTotal, rep.total, Math.max(10, cols - 2))
+      ? stack(rep.total, rep.subTotal, rep.total, Math.max(10, Math.min(32, Math.floor(cols * 0.6))))
       : { mine: '', agents: '', rest: '' }
 
     return (
@@ -310,7 +315,9 @@ export const register: Register = (on, options) => {
               <Text tabular>
                 {(LIMIT_LABELS[w.kind] ?? w.kind).padEnd(7)} {`${Math.round(w.percentUsed)}%`.padStart(4)}
               </Text>
-              <Text color={limitColor(w.percentUsed)}>{bar(w.percentUsed / 100, barWidth)}</Text>
+              <Text mono color={limitColor(w.percentUsed)}>
+                {bar(w.percentUsed / 100, barWidth)}
+              </Text>
               <Text dimColor wrap="truncate-end">
                 {until(w.resetsAt, now)}
               </Text>
@@ -329,12 +336,12 @@ export const register: Register = (on, options) => {
           <Box flexDirection="column" gap={1}>
             <Text dimColor wrap="truncate-end">
               {rep.isRolling ? 'Last 7 days' : `Since ${monthDay(rep.since)}`} · {millions(rep.total)} effective
-              tokens · {rep.sessions} sessions
+              tokens · {count(rep.sessions, 'session')}
             </Text>
 
             <Box flexDirection="column">
               <Text weight="semibold">Who used it</Text>
-              <Text>
+              <Text mono wrap="truncate-end">
                 <Text color={MINE}>{whole.mine}</Text>
                 <Text color={AGENTS}>{whole.agents}</Text>
               </Text>
@@ -343,7 +350,7 @@ export const register: Register = (on, options) => {
                 <Text color={AGENTS}>▓</Text> agents {share(rep.subTotal, rep.total).trim()}
               </Text>
               <Text dimColor wrap="truncate-end">
-                {rep.agents} agents in {rep.sessionsWithAgents} of {rep.sessions} sessions
+                {count(rep.agents, 'agent')} in {rep.sessionsWithAgents} of {count(rep.sessions, 'session')}
               </Text>
             </Box>
 
@@ -355,7 +362,7 @@ export const register: Register = (on, options) => {
                 return (
                   <Box flexDirection="row" gap={1}>
                     <Text tabular>{share(p.eff, rep.total)}</Text>
-                    <Text>
+                    <Text mono>
                       <Text color={MINE}>{s.mine}</Text>
                       <Text color={AGENTS}>{s.agents}</Text>
                       <Text dimColor>{s.rest}</Text>
@@ -375,7 +382,7 @@ export const register: Register = (on, options) => {
                   <Box flexDirection="column">
                     <Box flexDirection="row" gap={1}>
                       <Text tabular>{share(s.eff, rep.total)}</Text>
-                      <Text>
+                      <Text mono>
                         <Text color={MINE}>{b.mine}</Text>
                         <Text color={AGENTS}>{b.agents}</Text>
                         <Text dimColor>{b.rest}</Text>
@@ -386,7 +393,7 @@ export const register: Register = (on, options) => {
                       {'     '}
                       {s.project}
                       {s.agents > 0
-                        ? ` · ${s.agents} agents, ${share(s.subEff, s.eff).trim()} of this session`
+                        ? ` · ${count(s.agents, 'agent')}, ${share(s.subEff, s.eff).trim()} of this session`
                         : ' · no agents'}
                     </Text>
                   </Box>

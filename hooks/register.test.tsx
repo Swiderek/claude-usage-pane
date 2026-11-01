@@ -66,8 +66,35 @@ test('Refresh fills the pane from the script, on every surface', async ($, on) =
     expect(split?.text).toContain('you 20%')
     expect(await ui.find({ type: 'Text', text: /482 agents in 12 of 53 sessions/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Since Oct 28/ })).toBeDefined()
+    // The split bar stays inside the pane: 60% of its 48 columns, so it
+    // cannot wrap where the surface draws glyphs wider than a column.
+    const split48 = await ui.find({ type: 'Text', text: /^[█▓]+$/ })
+    expect(split48?.text.length).toBe(28)
     await ui.unmount()
   }
+})
+
+test('one agent and one session read in the singular', async ($, on) => {
+  const one: UsageReport = {
+    ...REPORT,
+    sessions: 1,
+    agents: 1,
+    sessionsWithAgents: 1,
+    topSessions: [{ ...REPORT.topSessions[0]!, agents: 1, subEff: 64_000_000 }],
+  }
+  on('clock.now', () => ({ value: NOW }))
+  on('session.usage', () => ({ value: USAGE }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('process.run', () => ({ value: { ...RAN, stdout: JSON.stringify(one) } }))
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'refresh' })
+
+  expect(await ui.find({ type: 'Text', text: /1 agent in 1 of 1 session$/ })).toBeDefined()
+  expect((await ui.find({ type: 'Text', text: /1 agent,/ }))?.text).toContain('1 agent, 32% of this session')
+  expect((await ui.find({ type: 'Text', text: /effective/ }))?.text).toContain('· 1 session')
+  await ui.unmount()
 })
 
 test('a store that refuses does not stop the count', async ($, on) => {

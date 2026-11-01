@@ -32,6 +32,10 @@ def project_of(cwd):
 
 
 def short(project):
+    if project == "~":
+        return "(home folder)"
+    if project == "?":
+        return "(unknown)"
     return project.rstrip("/").rsplit("/", 1)[-1] or project
 
 
@@ -154,7 +158,10 @@ def main():
              "eff": round(s["eff"]), "subEff": round(s["sub"]), "agents": len(s["agents"])}
             for s in ranked[:TOP]
         ],
-        "models": [{"model": k.replace("claude-", ""), "eff": round(v)} for k, v in models.most_common(4)],
+        # `<synthetic>` marks rows Claude Code writes itself (an interrupted or
+        # failed reply), not a model that ran.
+        "models": [{"model": k.replace("claude-", ""), "eff": round(v)}
+                   for k, v in models.most_common() if not k.startswith("<") and v > 0][:4],
     }
     # ASCII escapes: a Windows console's code page cannot print every title.
     json.dump(report, sys.stdout, ensure_ascii=True)
